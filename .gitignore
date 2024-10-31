@@ -1,3 +1,6 @@
 .env
 venv
-files/recipes.json
+files/
+mongo-data/
+**__pycache__/
+.vscode/

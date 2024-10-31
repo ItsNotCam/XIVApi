@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    restart: always
+    container_name: ffxiv_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db  # Use Docker volume here
+
+volumes:
+  mongo-data:
