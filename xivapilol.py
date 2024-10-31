@@ -2,7 +2,7 @@ import sys, requests, json
 from dotenv import load_dotenv
 import os
 
-from mongo import MongoDB
+from lib.mongo import MongoDB
 
 # get item name from command line
 if len(sys.argv) < 2:
