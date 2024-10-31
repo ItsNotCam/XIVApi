@@ -82,6 +82,10 @@ data = mongo.find_one("recipes", {ITEM_NAME: {"$exists": True}})
 if not data:
 	print("Materials for crafting", ITEM_NAME)
 	ingredients = get_ingredients(item_name=ITEM_NAME)
+	if not ingredients:
+		print(f"Item '{ITEM_NAME}' not found.")
+		sys.exit(1)
+
 	item_id = get_item_id(ITEM_NAME)
 	if not item_id:
 		print(f"Item '{ITEM_NAME}' not found.")
