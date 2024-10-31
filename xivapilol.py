@@ -1,59 +1,16 @@
-import sys, requests, json
-from dotenv import load_dotenv
-import os
-
+import sys, requests
 from lib.mongo import MongoDB
+from lib.util import get_item_id, print_item_data, build_params
 
 # get item name from command line
 if len(sys.argv) < 2:
 	print("Usage: python xivapilol.py <item_name>")
 	sys.exit(1)
-item_name = sys.argv[1]
 
-load_dotenv()
-private_key = os.getenv("PRIVATE_KEY")
+ITEM_NAME = sys.argv[1]
+
 raw_materials = []
 all_recipes = {}
-
-def to_st(r):
-	return str(r["count"]) + " "  + r["name"]
-	
-def get_item_id(item_name):
-	params = {
-		"private_key": private_key,
-		"sheets": "Item",
-		"query": f'Name~"{item_name}"'
-	}
-	resp = requests.get("https://beta.xivapi.com/api/1/search", params=params).json()
-	return resp["results"][0]["row_id"]
-
-# Usage example:
-# mongo = MongoDB()
-# # Fetch from MongoDB
-# data = mongo.find_one("recipes", {item_name: {"$exists": True}})
-# if data:
-# 	# print("Raw Resources from MongoDB", json.dumps(data[item_name]["raw_materials"], indent=2))
-# 	print("Item ID", json.dumps(data[item_name], indent=2))
-# else:
-# 	print("No data found in MongoDB for item:", item_name)
-
-# exit()
-
-stored_recipes = {}
-
-if not os.path.exists("files/recipes.json"):
-	os.makedirs("files", exist_ok=True)
-
-with open("files/recipes.json", "r") as ofile:
-	stored_recipes = json.load(ofile)
-
-def build_params(item_id=None, item_name=None):
-	return {
-		"private_key": private_key,
-		"sheets": "Recipe",
-		"query": f"ItemResult={item_id}" if item_id else f"ItemResult.Name~\"{item_name}\"",
-		"fields": "Ingredient,AmountIngredient,Icon"
-	}
 
 def get_ingredients(item_name=None, item_id=None, depth=0, item_multiplier=1):
 	params = build_params(item_id, item_name)
@@ -73,7 +30,7 @@ def get_ingredients(item_name=None, item_id=None, depth=0, item_multiplier=1):
 		if ingredient_counts[i] == 0:
 			continue
 
-		ingredient_count = ingredient_counts[i]# * item_multiplier
+		ingredient_count = ingredient_counts[i]
 
 		if depth == 0:
 			print(ingredient_count, ingredients[i]["fields"]["Name"])
@@ -111,33 +68,28 @@ def get_ingredients(item_name=None, item_id=None, depth=0, item_multiplier=1):
 					"count": ingredient_count * item_multiplier,
 					"icon_url": f"https://beta.xivapi.com/api/1/asset?path={icon_route}&format=png"
 				})
-
-				# raw_materials[ingredient_name] = ingredient_count * item_multiplier
 		else:
-			# Add to all recipes
 			all_recipes[ingredient_name] = sub_ingredients
 	
 	return crafted_ingredients
 
-mongo = MongoDB()
 
 # Fetch from MongoDB
-data = mongo.find_one("recipes", {item_name: {"$exists": True}})
-if data:
-	print("ID", json.dumps(data[item_name]["id"], indent=2))
-	print("Resources\n")
-	print(f"\"{item_name}\":", json.dumps(data[item_name], indent=2))
-else:
-	print("Materials for crafting", item_name)
-	ingredients = get_ingredients(item_name=item_name)
-	item_id = get_item_id(item_name)
+mongo = MongoDB()
+data = mongo.find_one("recipes", {ITEM_NAME: {"$exists": True}})
+
+# Fetch from XIVAPI if not found in MongoDB
+if not data:
+	print("Materials for crafting", ITEM_NAME)
+	ingredients = get_ingredients(item_name=ITEM_NAME)
+	item_id = get_item_id(ITEM_NAME)
 	if not item_id:
-		print(f"Item '{item_name}' not found.")
+		print(f"Item '{ITEM_NAME}' not found.")
 		sys.exit(1)
 
 	# Save to MongoDB
 	mongo.insert("recipes", {
-		item_name: {
+		ITEM_NAME: {
 			"id": item_id,
 			"raw_materials": raw_materials,
 			"ingredients": ingredients,
@@ -149,9 +101,6 @@ else:
 		mongo.insert("recipes", {key: value})
 
 	# Fetch from MongoDB
-	data = mongo.find_one("recipes", {item_name: {"$exists": True}})
-	print("ID", json.dumps(data[item_name]["id"], indent=2))
+	data = mongo.find_one("recipes", {ITEM_NAME: {"$exists": True}})
 
-	print("Resources", json.dumps([
-		to_st(r) for r in data[item_name]["raw_materials"]
-	], indent=2))
+print_item_data(data[ITEM_NAME], ITEM_NAME)
