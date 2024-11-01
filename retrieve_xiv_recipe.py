@@ -91,7 +91,7 @@ if not data:
 		print(f"Item '{ITEM_NAME}' not found.")
 		sys.exit(1)
 
-	# Save to MongoDB
+	# Save to MongoDB - this is done so BADLY
 	mongo.insert("recipes", {
 		ITEM_NAME: {
 			"id": item_id,
@@ -101,6 +101,7 @@ if not data:
 		}
 	})
 
+	# Save to MongoDB - this is done so BADLY
 	for key, value in all_recipes.items():
 		mongo.insert("recipes", {key: value})
 

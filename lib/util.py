@@ -13,7 +13,6 @@ def get_item_id(item_name):
 	resp = requests.get("https://beta.xivapi.com/api/1/search", params=params).json()
 	return resp["results"][0]["row_id"]
 
-
 def to_st(r):
 	return str(r["count"]) + " "  + r["name"]
 	
